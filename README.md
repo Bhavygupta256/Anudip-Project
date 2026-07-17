@@ -1,7 +1,8 @@
 # Anudip-Project
 
 ## YOU CAN VIEW THI APP LIVE (DEPLOYED AT treamlit)
-## [app link:](https://bankpy-mnttdicijmt3igcow5d6tw.streamlit.app/)
+
+## [click here to visit my apllication](https://bankpy-mnttdicijmt3igcow5d6tw.streamlit.app/)
 
 ## NAME: BHAVY GUPTA
 ## DESCRIPTION: THIS PROJECT IS CREATED AFTER THE COMPLETION OF PYTHON AN SQL TRAINING BY ANUDIP SOCIAL WELFARE COMMUNITY FOR PRACTICAL IMPLEMENTATION.
