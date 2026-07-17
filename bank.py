@@ -13,16 +13,15 @@ if "postgres" in st.secrets:
 else:
     # Attempt 2: Secure System Loop. If it's a slow boot, wait 2 seconds and retry.
     time.sleep(2)
-    # Correct way to clear the connection cache without breaking Streamlit
     st.cache_data.clear() 
     if "postgres" in st.secrets:
         CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
-
 
 # Final Safety Gate: If it STILL fails, completely shut down to protect the system.
 if not CLOUD_DB_URL:
     st.error("🔒 Streamlit Security System is mounting database drivers. Please refresh the page in 5 seconds.")
     st.stop()
+
 
 # --- DATABASE OPERATIONS ---
 def init_db():
@@ -84,22 +83,26 @@ def refresh_balance(account_num):
     conn.close()
     return res[0] if res else 0.0
 
+
 # --- INITIALIZE ON START ---
 try:
-    init_db()
+    if CLOUD_DB_URL:
+        init_db()
 except Exception as e:
     st.error(f"Database Connection Error: {e}")
 
+
 # --- TRACK SESSION STATE ---
-# This acts as our browser memory so users stay logged in securely!
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_acc = None
     st.session_state.user_name = None
 
+
 # --- STREAMLIT USER INTERFACE ---
 st.set_page_config(page_title="Virtual Cloud Bank", page_icon="🏦", layout="centered")
 st.title("🏦 Virtual Cloud Banking System")
+
 
 # SIDEBAR LOGOUT CONTROL
 if st.session_state.logged_in:
@@ -110,6 +113,7 @@ if st.session_state.logged_in:
         st.session_state.user_acc = None
         st.session_state.user_name = None
         st.rerun()
+
 
 # --- OPTION 1: USER IS NOT LOGGED IN ---
 if not st.session_state.logged_in:
@@ -125,7 +129,7 @@ if not st.session_state.logged_in:
             if res:
                 st.session_state.logged_in = True
                 st.session_state.user_acc = login_acc
-                st.session_state.user_name = res[1]
+                st.session_state.user_name = res[1]  # Safely extracts the holder name from database array
                 st.success("Access Granted! Fetching workspace...")
                 st.rerun()
             else:
@@ -143,7 +147,7 @@ if not st.session_state.logged_in:
                 conn = get_connection()
                 cursor = conn.cursor()
                 cursor.execute("INSERT INTO accounts (holder_name, pin, balance) VALUES (%s, %s, 0.0) RETURNING account_number", (reg_name, reg_pin))
-                account_num = cursor.fetchone()[0]
+                account_num = cursor.fetchone()[0]  # Safely extracts the raw generated integer ID
                 conn.commit()
                 cursor.close()
                 conn.close()
@@ -151,15 +155,14 @@ if not st.session_state.logged_in:
                 st.code(f"Your Account Number is: {account_num}", language="text")
                 st.warning("Write down your Account Number. You need it to access your dashboard!")
 
+
 # --- OPTION 2: USER IS SECURELY LOGGED IN ---
 else:
     current_balance = refresh_balance(st.session_state.user_acc)
     
-    # Beautiful Dynamic Balance Metric Header
     st.metric(label=f"Welcome back, {st.session_state.user_name}! 👋 Current Balance", value=f"${current_balance:,.2f}")
     st.divider()
 
-    # Dashboard Operation Tabs
     menu_tabs = st.tabs(["💵 Deposit", "🏧 Withdraw", "💸 Transfer Funds", "📜 Statement & Analytics"])
     
     # --- TAB A: DEPOSIT ---
@@ -228,10 +231,9 @@ else:
                     st.success(f"🚀 Sent ${tf_amount:,.2f} to Account #{dest_num}!")
                     st.rerun()
 
-    # --- TAB D: STATEMENT & ANALYTICS ---
+        # --- TAB D: STATEMENT & ANALYTICS ---
     with menu_tabs[3]:
         st.subheader("Ledger Statement & Visual Balance Trend")
-        
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT type, amount, timestamp FROM transactions WHERE account_number = %s ORDER BY transaction_id ASC", (st.session_state.user_acc,))
@@ -242,14 +244,10 @@ else:
         if not rows:
             st.info("No transaction history recorded yet. Your account balance trend will build automatically.")
         else:
-            # 📊 VISUAL BALANCE TREND CALCULATOR
-            # We map out their historical balance points chronological step-by-step
             running_balance = 0.0
             history_chart_data = []
-
             display_table_data = []
             
-            # This loop must stay indented right here inside the 'else' block
             for type_str, amt, time_str in rows:
                 if "Deposit" in type_str or "from" in type_str:
                     running_balance += amt
@@ -259,7 +257,6 @@ else:
                 history_chart_data.append({"Timestamp": time_str, "Balance ($)": running_balance})
                 display_table_data.append({"Operation Type": type_str, "Amount": f"${amt:,.2f}", "Timestamp": time_str})
             
-            # These drawing steps also must stay inside 'else' so they only show if logs exist
             df = pd.DataFrame(history_chart_data)
             st.line_chart(df, x="Timestamp", y="Balance ($)")
             
