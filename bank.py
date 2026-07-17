@@ -13,10 +13,11 @@ if "postgres" in st.secrets:
 else:
     # Attempt 2: Secure System Loop. If it's a slow boot, wait 2 seconds and retry.
     time.sleep(2)
-    # Force Streamlit to clear its secret cache and check the system again
-    st.invalidate_pages() 
+    # Correct way to clear the connection cache without breaking Streamlit
+    st.cache_data.clear() 
     if "postgres" in st.secrets:
         CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
+
 
 # Final Safety Gate: If it STILL fails, completely shut down to protect the system.
 if not CLOUD_DB_URL:
