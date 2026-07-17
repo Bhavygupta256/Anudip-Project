@@ -2,14 +2,26 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 from datetime import datetime
+import time
 
-# --- SECURITY: READ DATABASE CREDENTIALS ---
-# Streamlit reads this securely from your cloud settings when deployed.
+# --- SECURE DOUBLE-VERIFICATION INITIALIZATION ---
+CLOUD_DB_URL = None
+
+# Attempt 1: Standard immediate lookup
 if "postgres" in st.secrets:
     CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
 else:
-    # ⚠️ For testing locally in VS Code, paste your Neon URL here:
-    CLOUD_DB_URL = "postgres://USER:PASSWORD@HOST_://name.com"
+    # Attempt 2: Secure System Loop. If it's a slow boot, wait 2 seconds and retry.
+    time.sleep(2)
+    # Force Streamlit to clear its secret cache and check the system again
+    st.invalidate_pages() 
+    if "postgres" in st.secrets:
+        CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
+
+# Final Safety Gate: If it STILL fails, completely shut down to protect the system.
+if not CLOUD_DB_URL:
+    st.error("🔒 Streamlit Security System is mounting database drivers. Please refresh the page in 5 seconds.")
+    st.stop()
 
 # --- DATABASE OPERATIONS ---
 def init_db():
