@@ -2,27 +2,20 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 from datetime import datetime
-import time
+import os
 
-# --- SECURE DOUBLE-VERIFICATION INITIALIZATION ---
-CLOUD_DB_URL = None
-
-# Attempt 1: Standard immediate lookup
-if "postgres" in st.secrets:
-    CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
+# --- PRODUCTION SECURITY: READ DATABASE CREDENTIALS ---
+# This matches your exact box setup on Streamlit with no brackets!
+if "db_url" in st.secrets:
+    CLOUD_DB_URL = st.secrets["db_url"]
 else:
-    # Attempt 2: Secure System Loop. If it's a slow boot, wait 2 seconds and retry.
-    time.sleep(2)
-    st.cache_data.clear() 
-    if "postgres" in st.secrets:
-        CLOUD_DB_URL = st.secrets["postgres"]["db_url"]
+    CLOUD_DB_URL = os.environ.get("db_url")
 
-# Final Safety Gate: If it STILL fails, completely shut down to protect the system.
+# Final check to make sure the link exists before connecting
 if not CLOUD_DB_URL:
-    st.error("🔒 Streamlit Security System is mounting database drivers. Please refresh the page in 5 seconds.")
+    st.error("🔒 Cloud Secrets Missing! Please check your Streamlit Secret box formatting.")
     st.stop()
-
-
+    
 # --- DATABASE OPERATIONS ---
 def init_db():
     conn = psycopg2.connect(CLOUD_DB_URL)
