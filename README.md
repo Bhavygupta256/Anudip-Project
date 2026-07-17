@@ -1,6 +1,6 @@
 # Anudip-Project
 
-## YOU CAN VIEW THI APP LIVE (DEPLOYED AT treamlit)
+## You can view the app live, it is deployed at streamlit.io and i am hosting my database at neon.tech 
 
 ## [click here to visit my apllication](https://bankpy-mnttdicijmt3igcow5d6tw.streamlit.app/)
 
